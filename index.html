@@ -2,422 +2,150 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>宠物五维性格设定表 · 可视化</title>
-<style>
-  :root{
-    --bg:#0f1226;
-    --bg-2:#171a3a;
-    --card:#1c2048;
-    --card-2:#242a5e;
-    --text:#eef0ff;
-    --muted:#a8aed1;
-    --accent:#7c83ff;
-    --accent-2:#ff7ac6;
-    --weak:#ff6b6b;     /* 红=弱 */
-    --mid:#ffd166;      /* 黄=中 */
-    --strong:#06d6a0;   /* 绿=强 */
-    --shadow:0 10px 30px rgba(0,0,0,.35);
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;background:radial-gradient(1200px 800px at 20% -10%,#2a1f5c 0%,transparent 60%),
-                                       radial-gradient(900px 700px at 100% 10%,#1f4f6b 0%,transparent 55%),
-                                       linear-gradient(180deg,#0b0e22,#0f1226);
-                                       color:var(--text);font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
-                                       min-height:100vh;line-height:1.6;}
-  a{color:var(--accent)}
-  .container{max-width:1280px;margin:0 auto;padding:32px 24px 80px}
-
-  /* Hero */
-  .hero{display:grid;grid-template-columns:1.1fr 1fr;gap:32px;align-items:center;
-        background:linear-gradient(135deg,rgba(124,131,255,.18),rgba(255,122,198,.12));
-        border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:36px;box-shadow:var(--shadow);position:relative;overflow:hidden}
-  .hero::before{content:"";position:absolute;inset:-2px;background:conic-gradient(from 120deg,#7c83ff33,#ff7ac633,transparent 60%);filter:blur(30px);z-index:0}
-  .hero > *{position:relative;z-index:1}
-  .hero h1{font-size:38px;margin:0 0 8px;letter-spacing:1px}
-  .hero .sub{color:var(--muted);font-size:16px;margin-bottom:18px}
-  .hero .tags{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
-  .tag{padding:6px 12px;border-radius:999px;font-size:13px;
-       background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}
-  .tag.weak{color:#ffb3b3;border-color:#ff6b6b66}
-  .tag.mid{color:#ffe39a;border-color:#ffd16666}
-  .tag.strong{color:#9af0d4;border-color:#06d6a066}
-  .hero .meta{margin-top:22px;display:flex;gap:24px;color:var(--muted);font-size:14px;flex-wrap:wrap}
-  .hero .meta b{color:#fff;margin-right:6px}
-
-  .radar-wrap{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);
-              border-radius:20px;padding:22px 24px;display:flex;align-items:center;justify-content:center}
-
-  /* 五维线性轴 */
-  .axes{width:100%;display:flex;flex-direction:column;gap:18px}
-  .axis-row{display:grid;grid-template-columns:84px 1fr 84px;align-items:center;gap:14px}
-  .axis-row .lend,.axis-row .rend{font-size:12px;color:var(--muted);letter-spacing:1px}
-  .axis-row .lend{text-align:right}
-  .axis-row .rend{text-align:left}
-  .axis-track{position:relative;height:38px}
-  .axis-line{position:absolute;left:0;right:0;top:50%;height:2px;transform:translateY(-50%);
-             background:linear-gradient(90deg,#ff6b6b 0%,#ff6b6b 25%,#ffd166 50%,#06d6a0 75%,#06d6a0 100%);
-             border-radius:2px;opacity:.55}
-  .axis-zero{position:absolute;left:50%;top:4px;bottom:4px;width:1px;background:rgba(255,255,255,.25)}
-  .axis-ticks{position:absolute;inset:0;pointer-events:none}
-  .axis-ticks span{position:absolute;top:50%;width:1px;height:8px;transform:translate(-50%,-50%);background:rgba(255,255,255,.18)}
-  .axis-ticks i{position:absolute;top:calc(50% + 12px);transform:translateX(-50%);font-size:10px;color:var(--muted);font-style:normal}
-  .axis-name{position:absolute;left:8px;top:2px;font-size:12px;color:#cfd3ff;letter-spacing:1px;font-weight:600}
-  .axis-value{position:absolute;right:8px;top:2px;font-size:12px;color:#fff;font-weight:700}
-  .axis-dot{position:absolute;top:50%;width:18px;height:18px;border-radius:50%;
-            transform:translate(-50%,-50%);border:3px solid #0f1226;box-shadow:0 0 0 2px rgba(255,255,255,.15),0 0 18px currentColor;
-            transition:left .35s cubic-bezier(.4,1.4,.5,1),background .25s,color .25s;cursor:pointer}
-  .axis-dot.weak{background:#ff6b6b;color:#ff6b6b}
-  .axis-dot.mid{background:#ffd166;color:#ffd166}
-  .axis-dot.strong{background:#06d6a0;color:#06d6a0}
-  .axis-tag{position:absolute;top:-2px;transform:translate(-50%,-100%);padding:2px 8px;border-radius:6px;font-size:11px;color:#0f1226;font-weight:700;white-space:nowrap;
-            transition:left .35s cubic-bezier(.4,1.4,.5,1),background .25s}
-  .axis-tag.weak{background:#ff6b6b}.axis-tag.mid{background:#ffd166}.axis-tag.strong{background:#06d6a0}
-
-  /* Section title */
-  .section-title{display:flex;align-items:center;gap:14px;margin:48px 4px 18px}
-  .section-title h2{margin:0;font-size:24px}
-  .section-title .line{flex:1;height:1px;background:linear-gradient(90deg,rgba(255,255,255,.2),transparent)}
-
-  /* 维度卡片 */
-  .dims{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:20px}
-  .dim-card{background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid rgba(255,255,255,.08);
-            border-radius:20px;padding:22px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform .2s ease}
-  .dim-card:hover{transform:translateY(-3px)}
-  .dim-card .dim-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-  .dim-card .dim-name{font-size:20px;font-weight:700;margin:0}
-  .dim-card .dim-axis{color:var(--muted);font-size:13px;margin-top:4px;letter-spacing:1px}
-  .dim-card .dim-icon{font-size:30px;line-height:1;opacity:.85}
-
-  .level-tabs{display:flex;gap:8px;margin:16px 0 14px;background:rgba(0,0,0,.25);
-              border-radius:12px;padding:6px;border:1px solid rgba(255,255,255,.06)}
-  .level-tab{flex:1;text-align:center;padding:10px 8px;border-radius:8px;font-size:14px;cursor:pointer;
-             color:var(--muted);transition:all .2s ease;user-select:none}
-  .level-tab:hover{color:#fff}
-  .level-tab.active{color:#0f1226;font-weight:700}
-  .level-tab[data-level="weak"].active{background:var(--weak)}
-  .level-tab[data-level="mid"].active{background:var(--mid)}
-  .level-tab[data-level="strong"].active{background:var(--strong)}
-
-  .level-body{background:rgba(0,0,0,.2);border-radius:14px;padding:16px;border:1px solid rgba(255,255,255,.06);min-height:340px}
-  .label-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
-  .level-pill{font-size:12px;padding:3px 10px;border-radius:999px;color:#0f1226;font-weight:700}
-  .level-pill.weak{background:var(--weak)}
-  .level-pill.mid{background:var(--mid)}
-  .level-pill.strong{background:var(--strong)}
-  .char-label{font-size:22px;font-weight:800;background:linear-gradient(90deg,#fff,#cfd3ff);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .char-desc{color:var(--muted);font-size:14px;margin-bottom:12px}
-
-  .pool{margin-top:10px}
-  .pool-title{font-size:12px;color:var(--muted);letter-spacing:2px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
-  .pool-title::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
-  .pool-title.fb::before{background:#7c83ff}
-  .pool-title.work::before{background:#ffd166}
-  .pool-title.social::before{background:#ff7ac6}
-  .pool-title.show::before{background:#06d6a0}
-  .chips{display:flex;flex-wrap:wrap;gap:6px}
-  .chip{font-size:12px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#dfe2ff}
-  .chip.side{background:rgba(255,107,107,.12);border-color:#ff6b6b66;color:#ffb3b3}
-
-  .show-pool{margin-top:14px;border-top:1px dashed rgba(255,255,255,.1);padding-top:12px}
-  .show-line{font-size:13px;color:#cfd3ff;margin:4px 0}
-  .show-line b{color:#fff;margin-right:6px}
-
-  /* 说明区 */
-  .notes{margin-top:48px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
-  .note-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px}
-  .note-card h4{margin:0 0 6px;color:#fff}
-  .note-card p{margin:0;color:var(--muted);font-size:14px}
-
-  .legend{display:flex;gap:14px;align-items:center;margin-top:6px;flex-wrap:wrap;color:var(--muted);font-size:13px}
-  .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
-  .legend .w{background:var(--weak)}.legend .m{background:var(--mid)}.legend .s{background:var(--strong)}
-
-  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:46px}
-
-  @media (max-width:900px){
-    .hero{grid-template-columns:1fr;padding:24px}
-    .hero h1{font-size:28px}
-    .radar-wrap{height:320px}
-  }
-</style>
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>梦境国度 · 精灵五维性格设定</title>
+<link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-<div class="container">
 
-  <!-- HERO -->
-  <section class="hero">
-    <div>
-      <h1>宠物五维性格设定表</h1>
-      <div class="sub">活力 · 亲和力 · 抗压力 · 胆识力 · 自主力 — 一只宠物 = 五维各取一档</div>
-      <div class="tags">
-        <span class="tag">维度 5</span>
-        <span class="tag">档位 3（弱/中/强）</span>
-        <span class="tag">基底组合 <b>3<sup>5</sup>=243</b></span>
-        <span class="tag">能力池 4（副本/打工/社交/演出）</span>
-      </div>
-      <div class="legend">
-        <span><i class="w"></i>红=弱档</span>
-        <span><i class="m"></i>黄=中档</span>
-        <span><i class="s"></i>绿=强档</span>
-      </div>
-      <div class="meta">
-        <div><b>核心逻辑</b>四个池子是同一套性格在不同场景的投影，保证表现连贯。</div>
-      </div>
-    </div>
-    <div class="radar-wrap">
-      <div class="axes" id="axes"></div>
-    </div>
-  </section>
-
-  <!-- DIMS -->
-  <div class="section-title">
-    <h2>五维详解</h2>
-    <span class="line"></span>
-    <span style="color:var(--muted);font-size:13px">点击每张卡片的 弱/中/强 切换查看详情</span>
-  </div>
-
-  <div class="dims" id="dims"></div>
-
-  <!-- 使用说明 -->
-  <div class="section-title">
-    <h2>怎么用这张表</h2>
-    <span class="line"></span>
-  </div>
-  <div class="notes">
-    <div class="note-card">
-      <h4>词条说明</h4>
-      <p>三池能力均为<b>标签化词条</b>，可直接抠出做游戏内能力/特性/标签。<b>【XX·副作用】</b>为强档代价；<b>【XX·中/高】</b>为程度修饰。</p>
-    </div>
-    <div class="note-card">
-      <h4>核心逻辑</h4>
-      <p>一只宠物 = 五维各取一档组合。<b>5维×3档=243</b> 种基底性格。四池是同一性格在副本/打工/社交场景的投影。</p>
-    </div>
-    <div class="note-card">
-      <h4>特长在两端</h4>
-      <p>配队拼<b>强档特长</b>：要照明带强活力、要安抚带强亲和力、要搬运带弱自主力。<b>全中档=水桶</b>，保底用。</p>
-    </div>
-    <div class="note-card">
-      <h4>弱档 ≠ 没用</h4>
-      <p>劣势反转成特长：弱胆识力<b>【天然隐身】</b>、弱抗压力<b>【环境预警】</b>、弱自主力<b>【最佳打工人】</b>。</p>
-    </div>
-  </div>
-
-  <footer>© 宠物五维性格设定 · 可视化构图</footer>
+<!-- 顶部云朵装饰 -->
+<div class="cloud-strip" aria-hidden="true">
+  <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+    <path d="M0,80 C100,30 200,110 320,70 C440,30 560,110 700,70 C840,30 960,110 1100,70 L1200,70 L1200,120 L0,120 Z" fill="#FFFFFF"/>
+  </svg>
 </div>
 
-<script>
-const DATA = [
-  {
-    key:"vitality", name:"活力", axis:"静 ↔ 闹", icon:"⚡", left:"静", right:"闹",
-    levels:{
-      weak:{tag:"慢性子",desc:"安静、节奏慢、不爱动，待机多",
-        fb:["静音潜行","低声响"], work:["耐久专注","看守","慢工细活"], social:["慢热","安定气场","沉默陪伴"],
-        show:{action:"慢吞吞挪步、打哈欠、放空", line:"\"不急……\" \"让我歇会儿\"", expr:"犯困、平静"}},
-      mid:{tag:"平和",desc:"动静适中，能跑能停，节奏稳",
-        fb:["全节奏适配","通用探索"], work:["万金油","机动补位"], social:["接话者","随和"],
-        show:{action:"自然待机、点头附和", line:"\"好呀\" \"可以啊\"", expr:"微笑、平静"}},
-      strong:{tag:"急先锋",desc:"跳脱好动、停不下来、爱表现",
-        fb:["照明","攀爬钻缝","快速采集",{t:"易暴露",side:true}], work:["高速作业","跑堂","采集","运输冲刺"], social:["自来熟","活跃气氛","带动全场"],
-        show:{action:"蹦跳、举手炫耀、原地转圈", line:"\"快来快来！\" \"这边这边！\"", expr:"大笑、眼冒星星"}}
-    }
-  },
-  {
-    key:"affinity", name:"亲和力", axis:"冷 ↔ 暖", icon:"💞", left:"冷", right:"暖",
-    levels:{
-      weak:{tag:"孤高",desc:"疏离、独来独往、不爱搭理人",
-        fb:["单兵高效","无安抚"], work:["独立作业","无需协作"], social:["高冷","被动社交","反差魅力"],
-        show:{action:"转身背对、独自待着、淡淡一瞥", line:"\"随便。\" \"哦。\"", expr:"面无表情、微皱眉"}},
-      mid:{tag:"随和",desc:"友善但不黏人，能合作也能独处",
-        fb:["协作适配·中","单干兼容"], work:["团队润滑","适度配合"], social:["好相处","朋友缘稳定"],
-        show:{action:"点头、招手、并肩站", line:"\"一起吧\" \"没问题\"", expr:"温和微笑"}},
-      strong:{tag:"暖心",desc:"共情强、爱靠近、把别人放心上",
-        fb:["安抚","解除惊吓","破除戒备","互动触发·高"], work:["接待","客服","调解纠纷"], social:["主动破冰","情绪照顾","开心果"],
-        show:{action:"拉手、拥抱、做鬼脸逗人、拍肩", line:"\"有我在呢~\" \"你还好吗？\"", expr:"温柔、共情、灿笑"}}
-    }
-  },
-  {
-    key:"pressure", name:"抗压力", axis:"燃 ↔ 稳", icon:"🛡️", left:"燃", right:"稳",
-    levels:{
-      weak:{tag:"玻璃心",desc:"情绪易波动、易受惊、易委屈",
-        fb:[{t:"易崩溃·卡死",side:true},"需安抚","环境预警"], work:["低压环境","避高压"], social:["情绪外露","戏多","需被照顾"],
-        show:{action:"发抖、捂脸、瘪嘴、躲到别人身后", line:"\"呜……\" \"我是不是做错了\"", expr:"害怕、委屈、快哭"}},
-      mid:{tag:"平稳",desc:"情绪有起伏但能自我调节",
-        fb:["抗压·中","自我调节"], work:["岗位通用","情绪稳定"], social:["正常表达","好沟通"],
-        show:{action:"自然反应、揉脸调整", line:"\"还好啦\" \"有点紧张\"", expr:"自然喜怒"}},
-      strong:{tag:"定海针",desc:"沉稳、抗压、临危不乱",
-        fb:["扛压稳定","搬运不掉落","稳定锚点"], work:["应急","高峰把关","抗压岗"], social:["主心骨","调解者","安心感"],
-        show:{action:"站定、张臂护住同伴、缓缓点头", line:"\"别慌。\" \"有我在。\"", expr:"平静、坚定"}}
-    }
-  },
-  {
-    key:"courage", name:"胆识力", axis:"怯 ↔ 莽", icon:"🔥", left:"怯", right:"莽",
-    levels:{
-      weak:{tag:"胆小鬼",desc:"怕黑怕生怕未知、退缩",
-        fb:[{t:"拒进危险区·卡死",side:true},"天然隐身","规避追踪"], work:["幕后","后厨","库房"], social:["怕生慢热","放下戒备后黏人"],
-        show:{action:"缩成一团、抱头、扯同伴衣角、探头偷看", line:"\"等等我……\" \"好可怕\"", expr:"紧张、害怕"}},
-      mid:{tag:"谨慎",desc:"不鲁莽也不怯场，先观察再行动",
-        fb:["稳妥探索","危险示警"], work:["低出错","分寸把控"], social:["有礼有度","可靠"],
-        show:{action:"左右观望、试探性靠近、点头", line:"\"小心点\" \"我先看看\"", expr:"专注、略警惕"}},
-      strong:{tag:"莽夫",desc:"天不怕地不怕、冲在最前",
-        fb:["先锋开路","踩勇气机关","开通近路",{t:"误触·副作用",side:true}], work:["重活","开拓","试新"], social:["仗义","敢出头","爱逞强"],
-        show:{action:"拍胸脯、大步向前、叉腰、握拳", line:"\"看我的！\" \"怕什么！\"", expr:"得意、兴奋"}}
-    }
-  },
-  {
-    key:"autonomy", name:"自主力", axis:"顺从 ↔ 任性", icon:"🎯", left:"顺从", right:"任性",
-    levels:{
-      weak:{tag:"老黄牛",desc:"顺从、听指挥、任劳任怨、顾全大局",
-        fb:["完全服从","主动让位","不脱队"], work:["最佳打工人","稳定产出","任劳任怨"], social:["不争不抢","默默付出","需被看见"],
-        show:{action:"埋头干活、默默让步、低头", line:"\"好的。\" \"……交给我。\"", expr:"平静、偶尔欣慰"}},
-      mid:{tag:"有主见",desc:"听指挥但有想法，会提建议",
-        fb:["基本服从","偶选优解"], work:["称职","流程优化"], social:["有来有往","能商量"],
-        show:{action:"歪头思考、举手提议", line:"\"要不这样？\" \"我觉得吧……\"", expr:"思索、认真"}},
-      strong:{tag:"小作精",desc:"任性、有个性、爱自作主张、戏多",
-        fb:["脱队探索·涌现","挖隐藏物",{t:"惹祸·副作用",side:true},"拒绝放手"], work:["高方差","惊喜产出","难管理"], social:["戏精","爱出风头","欢喜冤家"],
-        show:{action:"抱东西不放、扭头、鼓腮、举高炫耀", line:"\"不要嘛~\" \"这个归我！\"", expr:"得意、傲娇、鼓腮"}}
-    }
-  }
-];
+<!-- 漂浮云朵 -->
+<div class="float-clouds" aria-hidden="true">
+  <span class="cloud c1"></span>
+  <span class="cloud c2"></span>
+  <span class="cloud c3"></span>
+  <span class="cloud c4"></span>
+  <span class="cloud c5"></span>
+</div>
 
-const LEVELS = [
-  {key:"weak", label:"弱"},
-  {key:"mid",  label:"中"},
-  {key:"strong",label:"强"},
-];
+<!-- 头部舞台 -->
+<header class="stage-hero">
+  <div class="spotlight left"></div>
+  <div class="spotlight right"></div>
 
-// 渲染卡片
-const dimsEl = document.getElementById("dims");
-const state = {}; // 每个维度当前选中等级
-DATA.forEach(d => state[d.key] = "strong");
-
-function chipHtml(item){
-  if(typeof item === "string") return `<span class="chip">${item}</span>`;
-  if(item && item.side) return `<span class="chip side">${item.t}</span>`;
-  return `<span class="chip">${item.t || item}</span>`;
-}
-
-function renderCard(d){
-  const lv = state[d.key];
-  const data = d.levels[lv];
-  return `
-  <div class="dim-card" data-key="${d.key}">
-    <div class="dim-head">
-      <div>
-        <h3 class="dim-name">${d.name}</h3>
-        <div class="dim-axis">${d.axis}</div>
-      </div>
-      <div class="dim-icon">${d.icon}</div>
+  <div class="curtain">
+    <div class="curtain-rod"></div>
+    <div class="hang-clouds">
+      <span></span><span></span><span></span><span></span><span></span><span></span>
     </div>
-    <div class="level-tabs" role="tablist">
-      ${LEVELS.map(L=>`
-        <div class="level-tab ${lv===L.key?'active':''}" data-level="${L.key}" data-key="${d.key}" role="tab">${L.label}档</div>`).join("")}
-    </div>
-    <div class="level-body">
-      <div class="label-row">
-        <span class="level-pill ${lv}">${LEVELS.find(x=>x.key===lv).label}档</span>
-        <span class="char-label">${data.tag}</span>
-      </div>
-      <div class="char-desc">${data.desc}</div>
 
-      <div class="pool">
-        <div class="pool-title fb">副本能力池</div>
-        <div class="chips">${data.fb.map(chipHtml).join("")}</div>
-      </div>
-      <div class="pool">
-        <div class="pool-title work">打工能力池</div>
-        <div class="chips">${data.work.map(chipHtml).join("")}</div>
-      </div>
-      <div class="pool">
-        <div class="pool-title social">社交能力池</div>
-        <div class="chips">${data.social.map(chipHtml).join("")}</div>
-      </div>
+    <div class="hero-text">
+      <p class="kicker">DREAM REALM · CHARACTER DESIGN</p>
+      <h1>精灵五维性格设定</h1>
+      <p class="subtitle">梦境国度 · 五幕片场</p>
 
-      <div class="show-pool">
-        <div class="pool-title show">演出池</div>
-        <div class="show-line"><b>动作</b>${data.show.action}</div>
-        <div class="show-line"><b>台词</b>${data.show.line}</div>
-        <div class="show-line"><b>表情</b>${data.show.expr}</div>
+      <div class="legend">
+        <span class="tag tag-weak">弱档</span>
+        <span class="tag tag-mid">中档</span>
+        <span class="tag tag-strong">强档</span>
       </div>
     </div>
-  </div>`;
-}
+  </div>
 
-function renderAll(){
-  dimsEl.innerHTML = DATA.map(renderCard).join("");
-  dimsEl.querySelectorAll(".level-tab").forEach(tab=>{
-    tab.addEventListener("click",()=>{
-      const k = tab.dataset.key;
-      state[k] = tab.dataset.level;
-      renderAll();
-      updateAxes();
-    });
-  });
-}
-renderAll();
-
-// 五维线性轴：弱=-70, 中=0, 强=+70（值域 -100 ~ 100）
-const axesEl = document.getElementById("axes");
-const levelToScore = {weak:-70, mid:0, strong:70};
-
-function buildAxes(){
-  axesEl.innerHTML = DATA.map(d => {
-    return `
-    <div class="axis-row" data-key="${d.key}">
-      <div class="lend">${d.left}<br><span style="opacity:.55">-100</span></div>
-      <div class="axis-track">
-        <div class="axis-name">${d.name}</div>
-        <div class="axis-value" data-role="value"></div>
-        <div class="axis-line"></div>
-        <div class="axis-zero"></div>
-        <div class="axis-ticks">
-          <span style="left:0%"></span><i style="left:0%">-100</i>
-          <span style="left:25%"></span>
-          <span style="left:50%"></span><i style="left:50%">0</i>
-          <span style="left:75%"></span>
-          <span style="left:100%"></span><i style="left:100%">+100</i>
-        </div>
-        <div class="axis-tag" data-role="tag"></div>
-        <div class="axis-dot" data-role="dot" title="点击切换档位"></div>
+  <!-- 舞台底座 + 道具 -->
+  <div class="stage-floor">
+    <div class="rail"></div>
+    <div class="director-chair" title="DIRECTOR">
+      <div class="chair-back">DIRECTOR<span class="star">★</span></div>
+      <div class="chair-seat"></div>
+      <div class="chair-leg l1"></div>
+      <div class="chair-leg l2"></div>
+    </div>
+    <div class="clapper" title="SCENE 1">
+      <div class="clapper-top">
+        <span class="stripe"></span><span class="stripe"></span>
+        <span class="stripe"></span><span class="stripe"></span>
       </div>
-      <div class="rend">${d.right}<br><span style="opacity:.55">+100</span></div>
-    </div>`;
-  }).join("");
+      <div class="clapper-body">
+        <p>SCENE 1</p>
+        <p class="row"><span>TAKE 1</span><span>♥</span></p>
+        <p class="row"><span>DATE</span><span>梦</span></p>
+      </div>
+    </div>
+    <div class="camera-bot" title="梦境摄影机">
+      <div class="cam-eye e1"></div>
+      <div class="cam-eye e2"></div>
+      <div class="cam-lens"></div>
+      <div class="cam-tag">SCENE 1</div>
+      <div class="cam-base"></div>
+    </div>
+  </div>
+</header>
 
-  // 点击点位循环切换档位
-  const order = {weak:"mid", mid:"strong", strong:"weak"};
-  axesEl.querySelectorAll(".axis-row").forEach(row=>{
-    const key = row.dataset.key;
-    row.querySelector(".axis-dot").addEventListener("click",()=>{
-      state[key] = order[state[key]];
-      renderAll();
-      updateAxes();
-    });
-  });
-  updateAxes();
-}
+<!-- 世界观胶囊 -->
+<section class="lore">
+  <div class="lore-card">
+    <h2>世界观 · 梦境国度</h2>
+    <p>玩家与精灵生活在「梦境国度」，国度的能源来自人类的好梦。三大组别协作运转——</p>
+    <div class="trio">
+      <div class="trio-item">
+        <div class="trio-ico">🌙</div>
+        <h3>梦境冒险组</h3>
+        <p>潜入人类梦境，搜刮恶梦元素、带回新生精灵。</p>
+      </div>
+      <div class="trio-item">
+        <div class="trio-ico">🛠️</div>
+        <h3>梦境支援组</h3>
+        <p>国度基础运转、新生精灵养育、设施建造、养成材料生产。</p>
+      </div>
+      <div class="trio-item">
+        <div class="trio-ico">🎭</div>
+        <h3>梦境演出组</h3>
+        <p>在人类梦境出演好梦，引导产出高质量好梦能源。</p>
+      </div>
+    </div>
+    <div class="rule-pill">
+      <span class="dot"></span>
+      非战斗设定 · 梦中人类自我防御意识会化身敌人「驱逐」玩家与精灵，全程无战斗、不伤害；被驱逐 = 当晚梦境结束。
+    </div>
+  </div>
+</section>
 
-function updateAxes(){
-  DATA.forEach(d=>{
-    const row = axesEl.querySelector(`.axis-row[data-key="${d.key}"]`);
-    if(!row) return;
-    const lv = state[d.key];
-    const score = levelToScore[lv];
-    const pct = ((score + 100) / 200) * 100; // -100~100 → 0~100%
-    const dot = row.querySelector('[data-role="dot"]');
-    const tag = row.querySelector('[data-role="tag"]');
-    const val = row.querySelector('[data-role="value"]');
-    dot.className = `axis-dot ${lv}`;
-    dot.style.left = pct + "%";
-    tag.className = `axis-tag ${lv}`;
-    tag.style.left = pct + "%";
-    tag.textContent = `${d.levels[lv].tag} · ${score>0?'+':''}${score}`;
-    val.textContent = (score>0?'+':'') + score;
-    val.style.color = lv==='weak'?'#ff6b6b':lv==='mid'?'#ffd166':'#06d6a0';
-  });
-}
+<!-- 五维区间图 -->
+<section class="dims-axis">
+  <div class="axis-card">
+    <h2>精灵的五维性格</h2>
+    <p class="axis-intro">每只精灵 = 五个维度各取一个数值（区间 <b>-100 ~ +100</b>）的组合。数值落在哪一段，就表现为对应档位的性格特征。</p>
 
-buildAxes();
-</script>
+    <div class="axis-list" id="axisList"></div>
+  </div>
+</section>
+
+<!-- 五幕片场（五维度） -->
+<main id="acts" class="acts"></main>
+
+<!-- 涌现剧场说明 -->
+<section class="emergent">
+  <div class="curtain small">
+    <div class="curtain-rod"></div>
+    <div class="hang-clouds small">
+      <span></span><span></span><span></span><span></span>
+    </div>
+    <div class="emergent-inner">
+      <h2>涌现式剧场 · 演出池用法</h2>
+      <p>演出池中每条词条由 <b>[动作 / 台词 / 表情]</b> 三段构成。运行时根据精灵的五维档位组合，按权重抽取动作、台词、表情，并结合戏路标签（来自梦境演出组能力池）与梦主当晚情绪需求，实时拼接成涌现式剧场演出。同一只精灵在不同梦境会演出不同剧目，由此诞生名演员。</p>
+
+      <div class="formula">
+        <span class="chip">五维档位</span> ＋
+        <span class="chip">戏路标签</span> ＋
+        <span class="chip">梦主情绪</span> →
+        <span class="chip out">今晚的剧目</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <p>© 梦境国度 · 精灵设定可视化 · v2 黏土片场版</p>
+</footer>
+
+<script src="./data.js"></script>
+<script src="./app.js"></script>
 </body>
 </html>
